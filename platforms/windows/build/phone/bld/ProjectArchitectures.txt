@@ -1,0 +1,2 @@
+C:\Users\nacardin\Source\Repos\qrscanner-test-app\platforms\windows\CordovaApp.Phone.jsproj;neutral
+C:\Users\nacardin\Source\Repos\qrscanner-test-app\plugins\cordova-plugin-qrscanner\src\windows\QRReader\QRReader.csproj;neutral

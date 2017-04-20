@@ -7,12 +7,28 @@
         "is_top_level": true,
         "variables": {}
     },
+    "cordova-plugin-camera": {
+        "source": {
+            "type": "registry",
+            "id": "cordova-plugin-camera"
+        },
+        "is_top_level": true,
+        "variables": {}
+    },
+    "cordova-plugin-compat": {
+        "source": {
+            "type": "registry",
+            "id": "cordova-plugin-compat"
+        },
+        "is_top_level": false,
+        "variables": {}
+    },
     "cordova-plugin-qrscanner": {
         "source": {
             "type": "git",
             "url": "https://github.com/nacardin/cordova-plugin-qrscanner.git",
             "subdir": ".",
-            "ref": "feature/windows"
+            "ref": "feature/windowsUniversal2"
         },
         "is_top_level": true,
         "variables": {}

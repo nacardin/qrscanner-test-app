@@ -3,8 +3,51 @@ import AVFoundation
 
 @objc(QRScanner)
 class QRScanner : CDVPlugin, AVCaptureMetadataOutputObjectsDelegate {
+    
+    class CameraView: UIView {
+        var videoPreviewLayer:AVCaptureVideoPreviewLayer?
+        
+        func interfaceOrientationToVideoOrientation(_ orientation : UIInterfaceOrientation) -> AVCaptureVideoOrientation {
+            switch (orientation) {
+            case UIInterfaceOrientation.portrait:
+                return AVCaptureVideoOrientation.portrait;
+            case UIInterfaceOrientation.portraitUpsideDown:
+                return AVCaptureVideoOrientation.portraitUpsideDown;
+            case UIInterfaceOrientation.landscapeLeft:
+                return AVCaptureVideoOrientation.landscapeLeft;
+            case UIInterfaceOrientation.landscapeRight:
+                return AVCaptureVideoOrientation.landscapeRight;
+            default:
+                return AVCaptureVideoOrientation.portraitUpsideDown;
+            }
+        }
 
-    var cameraView: UIView!
+        override func layoutSubviews() {
+            super.layoutSubviews();
+            if let sublayers = self.layer.sublayers {
+                for layer in sublayers {
+                    layer.frame = self.bounds;
+                }
+            }
+            
+            self.videoPreviewLayer?.connection.videoOrientation = interfaceOrientationToVideoOrientation(UIApplication.shared.statusBarOrientation);
+        }
+        
+        
+        func addPreviewLayer(_ previewLayer:AVCaptureVideoPreviewLayer?) {
+            previewLayer!.videoGravity = AVLayerVideoGravityResizeAspectFill
+            previewLayer!.frame = self.bounds
+            self.layer.addSublayer(previewLayer!)
+            self.videoPreviewLayer = previewLayer;
+        }
+        
+        func removePreviewLayer() {
+            self.videoPreviewLayer!.removeFromSuperlayer()
+            self.videoPreviewLayer = nil
+        }
+    }
+
+    var cameraView: CameraView!
     var captureSession:AVCaptureSession?
     var captureVideoPreviewLayer:AVCaptureVideoPreviewLayer?
     var metaOutput: AVCaptureMetadataOutput?
@@ -18,15 +61,15 @@ class QRScanner : CDVPlugin, AVCaptureMetadataOutputObjectsDelegate {
     var nextScanningCommand: CDVInvokedUrlCommand?
 
     enum QRScannerError: Int32 {
-        case UNEXPECTED_ERROR = 0,
-        CAMERA_ACCESS_DENIED = 1,
-        CAMERA_ACCESS_RESTRICTED = 2,
-        BACK_CAMERA_UNAVAILABLE = 3,
-        FRONT_CAMERA_UNAVAILABLE = 4,
-        CAMERA_UNAVAILABLE = 5,
-        SCAN_CANCELED = 6,
-        LIGHT_UNAVAILABLE = 7,
-        OPEN_SETTINGS_UNAVAILABLE = 8
+        case unexpected_error = 0,
+        camera_access_denied = 1,
+        camera_access_restricted = 2,
+        back_camera_unavailable = 3,
+        front_camera_unavailable = 4,
+        camera_unavailable = 5,
+        scan_canceled = 6,
+        light_unavailable = 7,
+        open_settings_unavailable = 8
     }
 
     enum CaptureError: Error {
@@ -42,7 +85,8 @@ class QRScanner : CDVPlugin, AVCaptureMetadataOutputObjectsDelegate {
     override func pluginInitialize() {
         super.pluginInitialize()
         NotificationCenter.default.addObserver(self, selector: #selector(pageDidLoad), name: NSNotification.Name.CDVPageDidLoad, object: nil)
-        self.cameraView = UIView(frame: CGRect(x: 0, y: 0, width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height))
+        self.cameraView = CameraView(frame: CGRect(x: 0, y: 0, width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height))
+        self.cameraView.autoresizingMask = [.flexibleWidth, .flexibleHeight];
     }
 
     func sendErrorCode(command: CDVInvokedUrlCommand, error: QRScannerError){
@@ -77,10 +121,10 @@ class QRScanner : CDVPlugin, AVCaptureMetadataOutputObjectsDelegate {
     func prepScanner(command: CDVInvokedUrlCommand) -> Bool{
         let status = AVCaptureDevice.authorizationStatus(forMediaType: AVMediaTypeVideo)
         if (status == AVAuthorizationStatus.restricted) {
-            self.sendErrorCode(command: command, error: QRScannerError.CAMERA_ACCESS_RESTRICTED)
+            self.sendErrorCode(command: command, error: QRScannerError.camera_access_restricted)
             return false
         } else if status == AVAuthorizationStatus.denied {
-            self.sendErrorCode(command: command, error: QRScannerError.CAMERA_ACCESS_DENIED)
+            self.sendErrorCode(command: command, error: QRScannerError.camera_access_denied)
             return false
         }
         do {
@@ -109,21 +153,19 @@ class QRScanner : CDVPlugin, AVCaptureMetadataOutputObjectsDelegate {
                 metaOutput!.setMetadataObjectsDelegate(self, queue: DispatchQueue.main)
                 metaOutput!.metadataObjectTypes = [AVMetadataObjectTypeQRCode]
                 captureVideoPreviewLayer = AVCaptureVideoPreviewLayer(session: captureSession)
-                captureVideoPreviewLayer!.videoGravity = AVLayerVideoGravityResizeAspectFill
-                captureVideoPreviewLayer!.frame = cameraView.bounds
-                cameraView.layer.addSublayer(captureVideoPreviewLayer!)
+                cameraView.addPreviewLayer(captureVideoPreviewLayer)
                 captureSession!.startRunning()
             }
             return true
         } catch CaptureError.backCameraUnavailable {
-            self.sendErrorCode(command: command, error: QRScannerError.BACK_CAMERA_UNAVAILABLE)
+            self.sendErrorCode(command: command, error: QRScannerError.back_camera_unavailable)
         } catch CaptureError.frontCameraUnavailable {
-            self.sendErrorCode(command: command, error: QRScannerError.FRONT_CAMERA_UNAVAILABLE)
+            self.sendErrorCode(command: command, error: QRScannerError.front_camera_unavailable)
         } catch CaptureError.couldNotCaptureInput(let error){
             print(error.localizedDescription)
-            self.sendErrorCode(command: command, error: QRScannerError.CAMERA_UNAVAILABLE)
+            self.sendErrorCode(command: command, error: QRScannerError.camera_unavailable)
         } catch {
-            self.sendErrorCode(command: command, error: QRScannerError.UNEXPECTED_ERROR)
+            self.sendErrorCode(command: command, error: QRScannerError.unexpected_error)
         }
         return false
     }
@@ -180,10 +222,10 @@ class QRScanner : CDVPlugin, AVCaptureMetadataOutputObjectsDelegate {
             backCamera!.unlockForConfiguration()
             self.getStatus(command)
         } catch LightError.torchUnavailable {
-            self.sendErrorCode(command: command, error: QRScannerError.LIGHT_UNAVAILABLE)
+            self.sendErrorCode(command: command, error: QRScannerError.light_unavailable)
         } catch let error as NSError {
             print(error.localizedDescription)
-            self.sendErrorCode(command: command, error: QRScannerError.UNEXPECTED_ERROR)
+            self.sendErrorCode(command: command, error: QRScannerError.unexpected_error)
         }
     }
 
@@ -239,7 +281,7 @@ class QRScanner : CDVPlugin, AVCaptureMetadataOutputObjectsDelegate {
         if(self.prepScanner(command: command)){
             scanning = false
             if(nextScanningCommand != nil){
-                self.sendErrorCode(command: nextScanningCommand!, error: QRScannerError.SCAN_CANCELED)
+                self.sendErrorCode(command: nextScanningCommand!, error: QRScannerError.scan_canceled)
             }
             self.getStatus(command)
         }
@@ -293,22 +335,22 @@ class QRScanner : CDVPlugin, AVCaptureMetadataOutputObjectsDelegate {
                         captureSession!.commitConfiguration()
                         self.getStatus(command)
                     } catch CaptureError.backCameraUnavailable {
-                        self.sendErrorCode(command: command, error: QRScannerError.BACK_CAMERA_UNAVAILABLE)
+                        self.sendErrorCode(command: command, error: QRScannerError.back_camera_unavailable)
                     } catch CaptureError.frontCameraUnavailable {
-                        self.sendErrorCode(command: command, error: QRScannerError.FRONT_CAMERA_UNAVAILABLE)
+                        self.sendErrorCode(command: command, error: QRScannerError.front_camera_unavailable)
                     } catch CaptureError.couldNotCaptureInput(let error){
                         print(error.localizedDescription)
-                        self.sendErrorCode(command: command, error: QRScannerError.CAMERA_UNAVAILABLE)
+                        self.sendErrorCode(command: command, error: QRScannerError.camera_unavailable)
                     } catch {
-                        self.sendErrorCode(command: command, error: QRScannerError.UNEXPECTED_ERROR)
+                        self.sendErrorCode(command: command, error: QRScannerError.unexpected_error)
                     }
 
                 }
             } else {
                 if(backCamera == nil){
-                    self.sendErrorCode(command: command, error: QRScannerError.BACK_CAMERA_UNAVAILABLE)
+                    self.sendErrorCode(command: command, error: QRScannerError.back_camera_unavailable)
                 } else {
-                    self.sendErrorCode(command: command, error: QRScannerError.FRONT_CAMERA_UNAVAILABLE)
+                    self.sendErrorCode(command: command, error: QRScannerError.front_camera_unavailable)
                 }
             }
         } else {
@@ -334,7 +376,7 @@ class QRScanner : CDVPlugin, AVCaptureMetadataOutputObjectsDelegate {
         if(self.captureSession != nil){
         backgroundThread(delay: 0, background: {
             self.captureSession!.stopRunning()
-            self.captureVideoPreviewLayer!.removeFromSuperlayer()
+            self.cameraView.removePreviewLayer()
             self.captureVideoPreviewLayer = nil
             self.metaOutput = nil
             self.captureSession = nil
@@ -422,12 +464,26 @@ class QRScanner : CDVPlugin, AVCaptureMetadataOutputObjectsDelegate {
         commandDelegate!.send(pluginResult, callbackId:command.callbackId)
     }
 
-    func openSettings(command: CDVInvokedUrlCommand) {
-        if #available(iOS 8.0, *) {
-            UIApplication.shared.openURL(NSURL(string: UIApplicationOpenSettingsURLString)! as URL)
-            self.getStatus(command)
+    func openSettings(_ command: CDVInvokedUrlCommand) {
+        if #available(iOS 10.0, *) {
+        guard let settingsUrl = URL(string: UIApplicationOpenSettingsURLString) else {
+            return
+        }
+        if UIApplication.shared.canOpenURL(settingsUrl) {
+            UIApplication.shared.open(settingsUrl, completionHandler: { (success) in
+                self.getStatus(command)
+            })
         } else {
-            self.sendErrorCode(command: command, error: QRScannerError.OPEN_SETTINGS_UNAVAILABLE)
+            self.sendErrorCode(command: command, error: QRScannerError.open_settings_unavailable)
+            }
+        } else {
+        // pre iOS 10.0
+            if #available(iOS 8.0, *) {
+                UIApplication.shared.openURL(NSURL(string: UIApplicationOpenSettingsURLString)! as URL)
+                self.getStatus(command)
+            } else {
+                self.sendErrorCode(command: command, error: QRScannerError.open_settings_unavailable)
+            }
         }
     }
 }

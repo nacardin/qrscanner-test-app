@@ -7,12 +7,19 @@
         "files": {}
     },
     "installed_plugins": {
-        "cordova-plugin-whitelist": {
+        "cordova-plugin-camera": {
             "PACKAGE_NAME": "HelloCordova"
         },
         "cordova-plugin-qrscanner": {
             "PACKAGE_NAME": "HelloCordova"
+        },
+        "cordova-plugin-whitelist": {
+            "PACKAGE_NAME": "HelloCordova"
         }
     },
-    "dependent_plugins": {}
+    "dependent_plugins": {
+        "cordova-plugin-compat": {
+            "PACKAGE_NAME": "HelloCordova"
+        }
+    }
 }

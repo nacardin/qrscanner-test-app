@@ -28,7 +28,7 @@
             "type": "git",
             "url": "https://github.com/nacardin/cordova-plugin-qrscanner.git",
             "subdir": ".",
-            "ref": "feature/windowsUniversal2"
+            "ref": "integration"
         },
         "is_top_level": true,
         "variables": {}

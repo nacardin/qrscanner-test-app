@@ -1,0 +1,2 @@
+C:\Users\Gabriel\Documents\testapp\qrscanner-test-app\platforms\windows\CordovaApp.Windows10.jsproj;arm
+C:\Users\Gabriel\Documents\testapp\qrscanner-test-app\plugins\cordova-plugin-qrscanner\src\windows\QRReader\QRReader.csproj;arm

@@ -58,13 +58,6 @@ namespace QRReader
 
             var mediaCapture = new MediaCapture();
             await mediaCapture.InitializeAsync(captureSettings);
-            //try
-            //{
-            //    await mediaCapture.InitializeAsync(captureSettings);
-            //} catch (Exception exc)
-            //{
-            //    throw exc;
-            //}
             var videoCapture = new VideoCapture(mediaCapture);
             await videoCapture.WatchForOrientationChange(mediaCapture);
             return videoCapture;

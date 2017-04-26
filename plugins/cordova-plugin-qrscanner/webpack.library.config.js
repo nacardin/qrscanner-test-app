@@ -2,21 +2,16 @@ const webpack = require('webpack');
 const path = require('path');
 
 module.exports = {
-  devtool: 'source-map',
   entry: {
-      library: path.join(__dirname, './src/browser/src/library.js')
+    worker: path.join(__dirname, './src/browser/src/worker.js'),
   },
   output: {
-      path: path.join(__dirname, './dist'),
-      filename: 'cordova-plugin-qrscanner-lib.min.js',
-      library: 'QRScanner',
-      libraryTarget: 'umd',
-      umdNamedDefine: true
+    path: path.join(__dirname, './src/browser'),
+    filename: 'worker.min.js'
   },
   plugins: [
     new webpack.optimize.UglifyJsPlugin({
-      comments: false,
-      sourceMap: true
+      comments: false
     })
   ]
 }

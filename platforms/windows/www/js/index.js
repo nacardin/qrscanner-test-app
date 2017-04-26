@@ -29,7 +29,24 @@ var app = {
     onDeviceReady: function() {
         this.receivedEvent('deviceready');
 
-            QRScanner.prepare(onDone); // show the prompt
+            prepareAndDestroy();
+            function prepareAndDestroy() {
+                console.log("PREPARE");
+                QRScanner.prepare(onDone); // show the prompt
+                setTimeout(function(){
+                    console.log("CANCEL");
+                    QRScanner.cancelScan();
+                    setTimeout(function(){
+                    console.log("HIDE");
+                    QRScanner.hide();
+                        setTimeout(function(){
+                            console.log("DESTROY");
+                            QRScanner.destroy();
+                            prepareAndDestroy();
+                        },1000);
+                    },1000);
+                },1000);
+            }
 
             function onDone(err, status) {
                 if (err) {
